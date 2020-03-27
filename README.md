@@ -108,7 +108,7 @@ joints_3d = torch.einsum('bik,ji->bjk', [vertices, J_regressor])
 3. Pose Blend Shape
    
    Linear blending creates foldind of skin around bended joint as the elbow. To correct the vertices before the rigging we apply a linear vertices dispalcement as a linear transformation.
-   the green mesh is a linear blending, while the orange mesh includes the pose blend correction 
+   The green mesh is a linear blending, while the orange mesh includes the pose blend correction 
    
    ![Pose Blend](./assets/images/SMPL_VS_LinearBlend.png)[figure 2 SMPL Paper]
    [code](https://github.com/vchoutas/smplx/blob/2144d5ca0272275e1b6f82af2a476d1f2c606814/smplx/lbs.py#L200-L203)
@@ -120,7 +120,7 @@ v_posed = pose_offsets + v_shaped
 
 4. Calculate Joints 3D Location
 
-   The 24-joints are represented by 23 relative rotation matrices corresponding to 23 joints relative to the kinematic tree. Given relative rotation matrices, v_pose Joint Locations, and the kinematic tree (parent), returns  posed_joints - the locations of the joints after applying the pose rotations [code](https://github.com/vchoutas/smplx/blob/2144d5ca0272275e1b6f82af2a476d1f2c606814/smplx/lbs.py#L350-L369)
+   The 24-joints are represented by 23 relative rotation matrices corresponding to 23 joints relative to the kinematic tree. Given relative rotation matrices, v_pose Joint Locations, and the kinematic tree (parent), returns  posed_joints - the locations of the joints after applying the pose rotations. The conversion from rotation matrices to position is known as Forward kinematics [code](https://github.com/vchoutas/smplx/blob/2144d5ca0272275e1b6f82af2a476d1f2c606814/smplx/lbs.py#L350-L369)
    
 ```python
 for i in range(1, parents.shape[0]):
@@ -144,7 +144,7 @@ pred_vertices = v_homo[:, :, :3, 0]
 ```
 6. Transformed Pose 3D Joint Regression
 
-As in "Neutral Pose 3D Joint Regression" step above we use the skin to predict 3d joint locations (49x3) [definition](https://github.com/mkocabas/VIBE/blob/master/lib/models/spin.py#L37-L55). This time the mesh vertices are in there final body pose and include pose blend effect as in ![Joint regressionframe](./assets/images/Joint_regression_frame.png) 
+As in "Neutral Pose 3D Joint Regression" step above we use the skin to predict 3d joint locations (49x3) [definition](https://github.com/mkocabas/VIBE/blob/master/lib/models/spin.py#L37-L55). This set of joint includes the 24 joint used to define the skin, and 25 extra_joints that are infered from the skin position. This time the mesh vertices are in there final body pose and include pose blend effect ![Joint regressionframe](./assets/images/Joint_regression_frame.png) 
 
 [code](https://github.com/mkocabas/VIBE/blob/master/lib/models/spin.py#L393)
 ```python
