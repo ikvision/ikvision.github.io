@@ -120,7 +120,10 @@ v_posed = pose_offsets + v_shaped
 
 4. Calculate Joints 3D Location
 
-   The 24-joints are represented by 23 relative rotation matrices corresponding to 23 joints relative to the kinematic tree. Given relative rotation matrices, v_pose Joint Locations, and the kinematic tree (parent), returns  posed_joints - the locations of the joints after applying the pose rotations. The conversion from rotation matrices to position is known as Forward kinematics [code](https://github.com/vchoutas/smplx/blob/2144d5ca0272275e1b6f82af2a476d1f2c606814/smplx/lbs.py#L350-L369)
+   The 24-joints are represented by 23 relative rotation matrices corresponding to 23 joints relative to the kinematic tree. Given relative rotation matrices, v_pose Joint Locations, and the kinematic tree (parent), returns  posed_joints - the locations of the joints after applying the pose rotations. The conversion from rotation matrices to position is known as Forward kinematics. The kinematic tree shown in the figure has root in the pelvis (index 0)
+    ![Pose Blend](./assets/images/kinematic_tree.png)[figure taken from [link](https://github.com/gulvarol/smplpytorch)]
+
+   [code](https://github.com/vchoutas/smplx/blob/2144d5ca0272275e1b6f82af2a476d1f2c606814/smplx/lbs.py#L350-L369)
    
 ```python
 for i in range(1, parents.shape[0]):
