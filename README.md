@@ -73,7 +73,14 @@ b2 = F.normalize(pred_pose[:, :, 1] - dot_prod * b1, dim=-1, eps=1e-6)
 b3 = torch.cross(b1, b2, dim=1)
 rot_mats = torch.stack([b1, b2, b3], dim=-1)
 ```
-    
+5. Predicted Camera Parameters
+
+The predicted camera parameters are weak perspective approximation for camera parameters. If one assumes a constant focal length (eg `focal_length=5000`), it can convert it to perspective camera . Parameters of pred_camera are  scale and translation(x,y) relative to the cropped bounding box [code](https://github.com/mkocabas/VIBE/blob/945fd109eaace037b38c56e22ec235a9d3c5100a/lib/models/spin.py#L426-L439)
+```python
+perspective_camera = torch.stack([pred_camera_translation_x, pred_camera_translation_y, 
+                               2 * focal_length / (crop_size * pred_camera_scale + 1e-9)], dim=-1) 
+```
+
 # SMPL
 Given pred_pose and pred_shape the SMPL model returns the 3d human body mesh, pred_vertices, and it's corresponding pred_joints.The belly button rotation matrix, global_orient, is relative to the coordinate system origin. All other rotation matrices are relative to it and are denoted by body_pose  [code](https://github.com/ikvision/VIBE/blob/0a4faaf231d76d68416adfc544e3e16cbeb67b16/lib/models/spin.py#L275-L283)
 ```python
