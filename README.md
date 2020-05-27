@@ -22,8 +22,8 @@ In this following sections we will review the inference, forward pass, of the VI
 The  convolutional neural network predict body pose and shape on a single image input using the following sequential steps:
 
 ### 1. Image read and crop
-   
-    Read each image individually and crops the person using it's predefined bounding box
+
+Read each image individually and crops the person using it's predefined bounding box
     [code](https://github.com/ikvision/VIBE/blob/0a4faaf231d76d68416adfc544e3e16cbeb67b16/lib/dataset/inference.py#L59-L70)
 
 ```python
@@ -61,7 +61,7 @@ pred_pose, pred_shape, pred_cam = self.decpose(xc)
 
 ### 4. Normalize Pose
 
-   The pred_pose are relative rotation angles of the joint of size NJointsx3x2.
+The pred_pose are relative rotation angles of the joint of size NJointsx3x2.
    Based on Zhou et al., "On the Continuity of Rotation Representations in Neural Networks". It is beneficial to represent joints angles in a continous form. This is done by orthogonal complemetation to create a rotation matrix that is NJointsx3x3  [code](https://github.com/ikvision/VIBE/blob/0a4faaf231d76d68416adfc544e3e16cbeb67b16/lib/models/spin.py#L92)
 
 ```python
@@ -92,32 +92,32 @@ body_pose effect on meshs
 ![SMPL Pose](./assets/images/SMPL_Pose.png)
 
 SMPL performs Six sequential steps:
-1. Linear Blend Shape
+### 1. Linear Blend Shape
 
-    Given the beta=pred_shape coefficients the T-Pose body shape is displaced according the the eignvectures of the body shapes as a weighted linear sum. This dispacment of vertices is added to a v_template - the average body shape mesh [code](https://github.com/vchoutas/smplx/blob/03813b7ffab9e9a9a0dfbf441329dedf5ae6176e/smplx/lbs.py#L262-L265)
-   
-    ```python
+Given the beta=pred_shape coefficients the T-Pose body shape is displaced according the the eignvectures of the body shapes as a weighted linear sum. This dispacment of vertices is added to a v_template - the average body shape mesh [code](https://github.com/vchoutas/smplx/blob/03813b7ffab9e9a9a0dfbf441329dedf5ae6176e/smplx/lbs.py#L262-L265)
+
+```python
     # Displacement[b, m, k] = sum_{l} betas[b, l] * shape_disps[m, k, l] i.e. Multiply each shape displacement by it's corresponding beta and than sum them.
     blend_shape = torch.einsum('bl,mkl->bmk', [betas, shape_disps])
     v_shaped = v_template + blend_shape
-    ```
+```
 
-2. Neutral Pose 3D Joint Regression
+### 2. Neutral Pose 3D Joint Regression
    
-    Calculates the 3D joint locations from the vertices using a sparse J_regressor matrix. The location of joint is a weighted average of neibouring vertices
+Calculates the 3D joint locations from the vertices using a sparse J_regressor matrix. The location of joint is a weighted average of neibouring vertices
     
-    ![joint regression](./assets/images/j_regressor.png) [figure 7 SMPL paper]
-    [code](https://github.com/vchoutas/smplx/blob/2144d5ca0272275e1b6f82af2a476d1f2c606814/smplx/lbs.py#L242)
+![joint regression](./assets/images/j_regressor.png) [figure 7 SMPL paper]
+[code](https://github.com/vchoutas/smplx/blob/2144d5ca0272275e1b6f82af2a476d1f2c606814/smplx/lbs.py#L242)
 ```python
 joints_3d = torch.einsum('bik,ji->bjk', [vertices, J_regressor])
 ```
 
-3. Pose Blend Shape
+### 3. Pose Blend Shape
    
-   Linear blending creates foldind of skin around bended joint as the elbow. To correct the vertices before the rigging we apply a linear vertices dispalcement as a linear transformation.
-   The green mesh is a linear blending, while the orange mesh includes the pose blend correction 
+Linear blending creates foldind of skin around bended joint as the elbow. To correct the vertices before the rigging we apply a linear vertices dispalcement as a linear transformation.
+The green mesh is a linear blending, while the orange mesh includes the pose blend correction 
    
-   ![Pose Blend](./assets/images/SMPL_VS_LinearBlend.png)[figure 2 SMPL Paper]
+![Pose Blend](./assets/images/SMPL_VS_LinearBlend.png)[figure 2 SMPL Paper]
    [code](https://github.com/vchoutas/smplx/blob/2144d5ca0272275e1b6f82af2a476d1f2c606814/smplx/lbs.py#L200-L203)
    
 ```python
@@ -125,11 +125,11 @@ pose_offsets = torch.matmul(pose_feature,posedirs)
 v_posed = pose_offsets + v_shaped
 ```
 
-4. Calculate Joints 3D Location
+### 4. Calculate Joints 3D Location
 
-   The 24-joints are represented by 23 relative rotation matrices corresponding to 23 joints relative to the kinematic tree. Given relative rotation matrices, v_pose Joint Locations, and the kinematic tree (parent), returns  posed_joints - the locations of the joints after applying the pose rotations. The conversion from rotation matrices to position is known as Forward kinematics. The kinematic tree shown in the figure has root in the pelvis (index 0)
+The 24-joints are represented by 23 relative rotation matrices corresponding to 23 joints relative to the kinematic tree. Given relative rotation matrices, v_pose Joint Locations, and the kinematic tree (parent), returns  posed_joints - the locations of the joints after applying the pose rotations. The conversion from rotation matrices to position is known as Forward kinematics. The kinematic tree shown in the figure has root in the pelvis (index 0)
    
-    ![Pose Blend](./assets/images/kinematic_tree.png)[figure produced by [link](https://github.com/gulvarol/smplpytorch)]
+![Pose Blend](./assets/images/kinematic_tree.png)[figure produced by [link](https://github.com/gulvarol/smplpytorch)]
 
    [code](https://github.com/vchoutas/smplx/blob/2144d5ca0272275e1b6f82af2a476d1f2c606814/smplx/lbs.py#L350-L369)
    
@@ -139,13 +139,12 @@ for i in range(1, parents.shape[0]):
     transform_chain.append(curr_res)
 ```
 
-5. Skinning
+### 5. Skinning
    
-   Given the v_pose mesh and Joints_relative_transforms use the linear blending skin weight to shape the vertices according to joints' location.
-   The 24 joints are denoted in white. Each mesh vertices has weights relative to it's neibouring joints according shown in color, the closer a vertex is to a joint the stronger effect the joint has on the vertex transform.
-   
-    ![linear blending](./assets/images/linear_blend_weights.png) [figure 3 SMPL paper]
-    [code](https://github.com/vchoutas/smplx/blob/03813b7ffab9e9a9a0dfbf441329dedf5ae6176e/smplx/lbs.py#L209-L220)
+Given the v_pose mesh and Joints_relative_transforms use the linear blending skin weight to shape the vertices according to joints' location.
+The 24 joints are denoted in white. Each mesh vertices has weights relative to it's neibouring joints according shown in color, the closer a vertex is to a joint the stronger effect the joint has on the vertex transform.
+![linear blending](./assets/images/linear_blend_weights.png) [figure 3 SMPL paper]
+[code](https://github.com/vchoutas/smplx/blob/03813b7ffab9e9a9a0dfbf441329dedf5ae6176e/smplx/lbs.py#L209-L220)
 
 ```python
 T = torch.matmul(lbs_weights,Joints_relative_transforms)
@@ -153,7 +152,8 @@ v_posed_homo = torch.cat([v_posed, homogen_coord])
 v_homo = torch.matmul(T,v_posed_homo)
 pred_vertices = v_homo[:, :, :3, 0]
 ```
-6. Transformed Pose 3D Joint Regression
+### 6. Transformed Pose 3D Joint Regression
+
 
 As in "Neutral Pose 3D Joint Regression" step above we use the skin to predict 3d joint locations (49x3) [definition](https://github.com/mkocabas/VIBE/blob/master/lib/models/spin.py#L37-L55). This set of joint includes the 24 joint used to define the skin, and 25 extra_joints that are infered from the skin position. This time the mesh vertices are in there final body pose and include pose blend effect ![Joint regressionframe](./assets/images/Joint_regression_frame.png) 
 
