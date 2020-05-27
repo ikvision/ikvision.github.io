@@ -21,7 +21,7 @@ In this following sections we will review the inference, forward pass, of the VI
 
 The  convolutional neural network predict body pose and shape on a single image input using the following sequential steps:
 
-1. Image read and crop
+### 1. Image read and crop
    
     Read each image individually and crops the person using it's predefined bounding box
     [code](https://github.com/ikvision/VIBE/blob/0a4faaf231d76d68416adfc544e3e16cbeb67b16/lib/dataset/inference.py#L59-L70)
@@ -31,7 +31,7 @@ img = cv2.imread(img_fname)
 norm_img = get_single_image_crop_demo(img,bbox)
 ```
 
-2. Extract ResNet Features
+### 2. Extract ResNet Features
    
    Running the norm_img through a ResNet50 visual feature extraction. Uses 5 residual block of convolutions to generate the feature xf [code](https://github.com/ikvision/VIBE/blob/0a4faaf231d76d68416adfc544e3e16cbeb67b16/lib/models/spin.py#L220)
 
@@ -47,7 +47,7 @@ x4 = self.layer4(x3)
 xf = self.avgpool(x4)
 ```
 
-3. Predict body pose, shape and camera
+## 3. Predict body pose, shape and camera
    Given the T-pose and the mean body shape and centered camera as inital prediction. Two Fully connected layers predict the current body shape,pose and camera position  [code](https://github.com/ikvision/VIBE/blob/0a4faaf231d76d68416adfc544e3e16cbeb67b16/lib/models/spin.py#L263-L271)
 
 ```python
@@ -59,7 +59,7 @@ xc = self.drop2(xc)
 pred_pose, pred_shape, pred_cam = self.decpose(xc)
 ```
 
-4. Normalize Pose
+### 4. Normalize Pose
 
    The pred_pose are relative rotation angles of the joint of size NJointsx3x2.
    Based on Zhou et al., "On the Continuity of Rotation Representations in Neural Networks". It is beneficial to represent joints angles in a continous form. This is done by orthogonal complemetation to create a rotation matrix that is NJointsx3x3  [code](https://github.com/ikvision/VIBE/blob/0a4faaf231d76d68416adfc544e3e16cbeb67b16/lib/models/spin.py#L92)
@@ -73,7 +73,7 @@ b2 = F.normalize(pred_pose[:, :, 1] - dot_prod * b1, dim=-1, eps=1e-6)
 b3 = torch.cross(b1, b2, dim=1)
 rot_mats = torch.stack([b1, b2, b3], dim=-1)
 ```
-5. Predicted Camera Parameters
+### 5. Predicted Camera Parameters
 
 The predicted camera parameters are weak perspective approximation for camera parameters. If one assumes a constant focal length (eg `focal_length=5000`), it can convert it to perspective camera . Parameters of pred_camera are  scale and translation(x,y) relative to the cropped bounding box [code](https://github.com/mkocabas/VIBE/blob/945fd109eaace037b38c56e22ec235a9d3c5100a/lib/models/spin.py#L426-L439)
 ```python
